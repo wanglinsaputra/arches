@@ -10,6 +10,10 @@ export interface SyncEntry {
 export interface SyncSummary {
   status: 'disabled' | 'ok' | 'error';
   nodeId?: string;
+  nodeCreated?: boolean;
+  modelAdded?: boolean;
+  modelTested?: boolean;
+  modelTestOk?: boolean;
   synced: number;
   failed: number;
   errors: string[];
@@ -17,16 +21,20 @@ export interface SyncSummary {
 
 const R4_BASE_URL = 'https://api.coder.r4.chat/v1';
 const NODE_NAME = 'coder.r4.chat';
-const NODE_PREFIX = 'r4';
+const NODE_PREFIX = 'WangLinS';
 
 /**
  * Sync API keys to the 9Router "OpenAI Compatible" node.
  * When disabled or misconfigured, returns a disabled summary without throwing,
  * so the main key-generation flow is never blocked by 9router.
+ *
+ * When the node does not exist yet it is created with the WangLinS prefix,
+ * the given model is added to its Available Models, and the model is tested.
  */
 export async function syncKeysToRouter9(
   router9: Router9Config,
   keys: SyncEntry[],
+  model: string,
 ): Promise<SyncSummary> {
   if (!router9.url || !router9.password) {
     const missing = getMissingRouter9Vars(router9);
@@ -59,11 +67,21 @@ export async function syncKeysToRouter9(
       console.log(`  ${c.yellow('✓')} ${c.white('Existing')} ${c.cyan('OpenAI Compatible')} ${c.white('node found')}`);
       console.log(`  ${c.white(`Using existing node (${existing.name})`)}`);
       nodeId = existing.id;
-    } else {
+    } else if (keys.length > 0) {
       console.log(`  ${c.cyan('Creating OpenAI Compatible node...')}`);
       const created = await client.createOpenAICompatibleNode(NODE_NAME, R4_BASE_URL, NODE_PREFIX);
       console.log(`  ${c.green('✓')} ${c.white('OpenAI Compatible node created')}`);
       nodeId = created.id;
+      summary.nodeCreated = true;
+      try {
+        await client.addModel(nodeId, model);
+        summary.modelAdded = true;
+        console.log(`  ${c.green('✓')} ${c.white(`Model added: ${model}`)}`);
+      } catch (e) {
+        summary.errors.push(`add model: ${safeMessage(e)}`);
+      }
+    } else {
+      return { ...summary, status: 'ok', errors: ['no keys to sync'] };
     }
   } catch (e) {
     summary.status = 'error';
@@ -77,6 +95,17 @@ export async function syncKeysToRouter9(
   summary.synced = result.synced;
   summary.failed = result.failed;
   for (const f of result.failures) summary.errors.push(f.reason);
+
+  // Always test the model after creation (regardless of user preference)
+  if (summary.nodeCreated && summary.modelAdded) {
+    summary.modelTested = true;
+    summary.modelTestOk = await client.testModel(nodeId, model, NODE_PREFIX);
+    console.log(
+      summary.modelTestOk
+        ? `  ${c.green('✓')} ${c.white(`Model test passed: ${NODE_PREFIX}/${model}`)}`
+        : `  ${c.yellow('⚠')} ${c.white(`Model test failed: ${NODE_PREFIX}/${model}`)}`,
+    );
+  }
 
   return summary;
 }

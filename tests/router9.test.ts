@@ -4,6 +4,7 @@ import { syncKeysToRouter9 } from '../src/sync.js';
 
 const BASE = 'http://router9.local';
 const PASS = 'secret-pass';
+const MODEL = 'deepseek-v4-flash-free';
 const NODE_ID = 'openai-compatible-chat-1fb61662-bc01-49d8-aca1-b65253b795ad';
 
 type FetchMock = ReturnType<typeof vi.fn>;
@@ -154,13 +155,13 @@ describe('syncKeysToRouter9', () => {
   ];
 
   it('disabled when ROUTER9_URL missing', async () => {
-    const summary = await syncKeysToRouter9({ url: undefined, password: PASS }, keys);
+    const summary = await syncKeysToRouter9({ url: undefined, password: PASS }, keys, MODEL);
     expect(summary.status).toBe('disabled');
     expect(summary.errors.join('')).toContain('ROUTER9_URL');
   });
 
   it('disabled when ROUTER9_PASS missing', async () => {
-    const summary = await syncKeysToRouter9({ url: BASE, password: undefined }, keys);
+    const summary = await syncKeysToRouter9({ url: BASE, password: undefined }, keys, MODEL);
     expect(summary.status).toBe('disabled');
     expect(summary.errors.join('')).toContain('ROUTER9_PASS');
   });
@@ -168,7 +169,7 @@ describe('syncKeysToRouter9', () => {
   it('error and does not throw when 9router unreachable', async () => {
     const fetchMock = mockFetch();
     fetchMock.mockRejectedValue(new TypeError('fetch failed'));
-    const summary = await syncKeysToRouter9({ url: 'http://127.0.0.1:1', password: PASS }, keys);
+    const summary = await syncKeysToRouter9({ url: 'http://127.0.0.1:1', password: PASS }, keys, MODEL);
     expect(summary.status).toBe('error');
     expect(summary.failed).toBe(2);
   });
@@ -176,7 +177,7 @@ describe('syncKeysToRouter9', () => {
   it('error on auth failure, main flow not blocked', async () => {
     const fetchMock = mockFetch();
     fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'Invalid password' }, 401));
-    const summary = await syncKeysToRouter9({ url: BASE, password: 'bad' }, keys);
+    const summary = await syncKeysToRouter9({ url: BASE, password: 'bad' }, keys, MODEL);
     expect(summary.status).toBe('error');
     expect(summary.errors.length).toBeGreaterThan(0);
   });
@@ -186,7 +187,7 @@ describe('syncKeysToRouter9', () => {
     loginOk(fetchMock);
     fetchMock.mockResolvedValueOnce(okRes({ nodes: [{ id: NODE_ID, type: 'openai-compatible', name: 'coder.r4.chat', prefix: '1', baseUrl: 'https://api.coder.r4.chat/v1' }] }));
     fetchMock.mockResolvedValue(okRes({ connection: {} }, 201));
-    const summary = await syncKeysToRouter9({ url: BASE, password: PASS }, keys);
+    const summary = await syncKeysToRouter9({ url: BASE, password: PASS }, keys, MODEL);
     expect(summary.status).toBe('ok');
     expect(summary.synced).toBe(2);
     const createdNodes = fetchMock.mock.calls.filter(
@@ -195,25 +196,48 @@ describe('syncKeysToRouter9', () => {
     expect(createdNodes).toHaveLength(0);
   });
 
-  it('creates OpenAI Compatible node when absent', async () => {
+  it('creates OpenAI Compatible node when absent (adds model + tests it)', async () => {
     const fetchMock = mockFetch();
     loginOk(fetchMock);
     fetchMock.mockResolvedValueOnce(okRes({ nodes: [] }));
-    fetchMock.mockResolvedValueOnce(okRes({ node: { id: NODE_ID, type: 'openai-compatible', name: 'coder.r4.chat', prefix: 'r4', baseUrl: 'https://api.coder.r4.chat/v1' } }, 201));
-    fetchMock.mockResolvedValue(okRes({ connection: {} }, 201));
-    const summary = await syncKeysToRouter9({ url: BASE, password: PASS }, keys);
+    fetchMock.mockResolvedValueOnce(okRes({ node: { id: NODE_ID, type: 'openai-compatible', name: 'coder.r4.chat', prefix: 'WangLinS', baseUrl: 'https://api.coder.r4.chat/v1' } }, 201));
+    fetchMock.mockResolvedValueOnce(okRes({ success: true, added: true })); // addModel
+    // URL-based routing for the remaining calls: addKey x2 then testModel
+    fetchMock.mockImplementation((url: string | URL | Request, init?: RequestInit) => {
+      const u = String(url);
+      if (u.endsWith('/api/models/test')) return Promise.resolve(okRes({ ok: true, latencyMs: 100 }));
+      if (u.endsWith('/api/providers') && init?.method === 'POST') return Promise.resolve(okRes({ connection: {} }, 201));
+      return Promise.resolve(okRes({}, 200));
+    });
+    const summary = await syncKeysToRouter9({ url: BASE, password: PASS }, keys, MODEL);
     expect(summary.status).toBe('ok');
     expect(summary.synced).toBe(2);
+    expect(summary.nodeCreated).toBe(true);
+    expect(summary.modelAdded).toBe(true);
+    expect(summary.modelTested).toBe(true);
+    expect(summary.modelTestOk).toBe(true);
     const createdNodes = fetchMock.mock.calls.filter(
       (call) => (call[0] as string).endsWith('/api/provider-nodes') && (call[1] as RequestInit).method === 'POST',
     );
     expect(createdNodes).toHaveLength(1);
+    const customModel = fetchMock.mock.calls.filter(
+      (call) => (call[0] as string).endsWith('/api/models/custom') && (call[1] as RequestInit).method === 'POST',
+    );
+    expect(customModel).toHaveLength(1);
+    const body = JSON.parse((customModel[0][1] as RequestInit).body as string);
+    expect(body).toEqual({ providerAlias: NODE_ID, id: MODEL, type: 'llm' });
+    const modelTest = fetchMock.mock.calls.filter(
+      (call) => (call[0] as string).endsWith('/api/models/test') && (call[1] as RequestInit).method === 'POST',
+    );
+    expect(modelTest).toHaveLength(1);
+    const testBody = JSON.parse((modelTest[0][1] as RequestInit).body as string);
+    expect(testBody).toEqual({ providerAlias: NODE_ID, model: `WangLinS/${MODEL}` });
   });
 
   it('password never appears in errors or output', async () => {
     const fetchMock = mockFetch();
     fetchMock.mockResolvedValueOnce(jsonResponse({ error: `bad password ${PASS}` }, 401));
-    const summary = await syncKeysToRouter9({ url: BASE, password: PASS }, keys);
+    const summary = await syncKeysToRouter9({ url: BASE, password: PASS }, keys, MODEL);
     const allText = JSON.stringify(summary) + summary.errors.join(' ');
     expect(allText).not.toContain(PASS);
   });

@@ -177,6 +177,34 @@ export class Router9Client {
   }
 
   /**
+   * Add a custom model to a node's Available Models.
+   * POST /api/models/custom
+   */
+  async addModel(nodeId: string, modelId: string): Promise<void> {
+    const { status, data } = await this.request('/api/models/custom', {
+      method: 'POST',
+      body: JSON.stringify({ providerAlias: nodeId, id: modelId, type: 'llm' }),
+    });
+    if (status === 200 || status === 201) return;
+    const msg = (data as { error?: string })?.error ?? `HTTP ${status}`;
+    throw this.error('BULK_ADD_FAILED', `failed to add model "${modelId}": ${msg}`, status);
+  }
+
+  /**
+   * Test a model on a node (requires at least one connection).
+   * POST /api/models/test — the model id must include the node prefix.
+   */
+  async testModel(nodeId: string, modelId: string, prefix: string): Promise<boolean> {
+    const { status, data } = await this.request('/api/models/test', {
+      method: 'POST',
+      body: JSON.stringify({ providerAlias: nodeId, model: `${prefix}/${modelId}` }),
+    });
+    if (status !== 200) return false;
+    const body = data as { ok?: boolean };
+    return body.ok === true;
+  }
+
+  /**
    * Bulk-add keys to an OpenAI Compatible node. Skips keys already present
    * on the node and continues on individual failures so one bad key doesn't
    * kill the rest.

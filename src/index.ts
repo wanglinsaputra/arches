@@ -235,10 +235,17 @@ async function main(): Promise<void> {
   if (router9Enabled) {
     const toSync: SyncEntry[] = allResults.filter((r) => r.valid).map((k) => ({ name: k.name, key: k.key }));
     console.log(`\n  ${c.white('9router integration:')} ${c.green('ENABLED')}`);
-    const summary: SyncSummary = await syncKeysToRouter9(router9Cfg, toSync);
+    const summary: SyncSummary = await syncKeysToRouter9(router9Cfg, toSync, opts.model);
     if (summary.status === 'ok') {
       console.log(`  ${c.green(`✓ Synced: ${summary.synced}`)}`);
       if (summary.failed > 0) console.log(`  ${c.yellow(`⚠ 9router failed: ${summary.failed}`)}`);
+      if (summary.modelTested) {
+        console.log(
+          summary.modelTestOk
+            ? `  ${c.green('✓ Model test: PASSED')}`
+            : `  ${c.yellow('⚠ Model test: FAILED')}`,
+        );
+      }
     } else {
       console.log(`  ${c.red(`⚠ 9router ${summary.status}: ${summary.errors.join('; ')}`)}`);
     }

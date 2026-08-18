@@ -124,7 +124,9 @@ When enabled, after key generation the tool:
 
 1. **Authenticates** to 9Router (`POST /api/auth/login`).
 2. **Finds** the `OpenAI Compatible` node (`GET /api/provider-nodes`).
-3. **Creates** it if absent (never duplicates).
+3. **Creates** it if absent with the **`WangLinS`** prefix (never duplicates), then:
+   - adds the validation model to **Available Models** (`POST /api/models/custom`),
+   - and **tests** that model (`POST /api/models/test`) — always runs.
 4. **Bulk-adds** each valid key as a connection on that node, skipping duplicates and continuing on individual failures.
 
 ```text
@@ -133,6 +135,14 @@ When enabled, after key generation the tool:
 Using existing node (coder.r4.chat)
 ✓ Synced: 8
 ⚠ 9router failed: 2
+```
+
+```text
+9router integration: ENABLED
+✓ OpenAI Compatible node created
+✓ Model added: deepseek-v4-flash-free
+✓ Synced: 8
+✓ Model test: PASSED
 ```
 
 9Router sync failures never fail the main key-generation flow.
