@@ -8,7 +8,7 @@ Automated tool to create R4 Coder accounts, generate API keys, validate them, an
 
 <div align="center">
 
-![preview](docs/preview.png)
+![preview](docs/arches.png)
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue)](https://www.typescriptlang.org/)
 [![Node](https://img.shields.io/badge/Node-%3E%3D20-green)](https://nodejs.org/)
