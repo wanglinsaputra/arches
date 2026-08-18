@@ -4,6 +4,8 @@
 
 Automated tool to create R4 Coder accounts, generate API keys, validate them, and optionally bulk-add valid keys to a **9Router** "OpenAI Compatible" provider.
 
+> ⚠️ **Educational & research use only.** Use at your own risk — you are solely responsible for compliance with each service's ToS and all applicable laws. See [Disclaimer](#disclaimer).
+
 <div align="center">
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue)](https://www.typescriptlang.org/)
@@ -184,3 +186,27 @@ tests/
 ## License
 
 [MIT](https://github.com/wanglinsaputra/auto-api-key-generator/blob/main/LICENSE) — © 2026 WangLinS
+
+## Disclaimer
+
+> **Educational & research use only.**
+
+This tool is provided **as-is**, for **educational, research, and personal-automation purposes only**. The author (**WangLinS**) assumes **no responsibility** for how this software is used.
+
+By using this tool you agree that:
+
+1. **You are solely responsible** for any accounts, API keys, or data you create or manage with it.
+2. **You must comply** with the Terms of Service, Acceptable Use Policy, and all applicable laws of:
+   - the services this tool interacts with (R4 Coder, temp-mail providers, 9Router),
+   - your local jurisdiction, and
+   - any jurisdiction where the services operate.
+3. **You must not** use this tool for spam, fraud, abuse, credential misuse, unauthorized access, or any illegal activity.
+4. Accounts and API keys generated in bulk may violate a service's Terms of Service and result in account suspension, IP blocking, or legal action — **that risk is entirely yours**.
+5. The author is **not liable** for any damages, losses, bans, or legal consequences arising from the use or misuse of this software.
+6. Temp-mail and third-party APIs may change, rate-limit, or shut down without notice. No uptime or functionality is guaranteed.
+
+If you do not agree with these terms, **do not use this tool**.
+
+---
+
+_This project is not affiliated with, endorsed by, or connected to R4 Coder, 9Router, or any temp-mail provider._
