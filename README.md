@@ -8,9 +8,11 @@ Automated tool to create R4 Coder accounts, generate API keys, validate them, an
 
 <div align="center">
 
+![preview](docs/preview.png)
+
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue)](https://www.typescriptlang.org/)
 [![Node](https://img.shields.io/badge/Node-%3E%3D20-green)](https://nodejs.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/wanglinsaputra/auto-api-key-generator/blob/main/LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/wanglinsaputra/arches/blob/main/LICENSE)
 
 </div>
 
@@ -185,7 +187,7 @@ tests/
 
 ## License
 
-[MIT](https://github.com/wanglinsaputra/auto-api-key-generator/blob/main/LICENSE) — © 2026 WangLinS
+[MIT](https://github.com/wanglinsaputra/arches/blob/main/LICENSE) — © 2026 WangLinS
 
 ## Disclaimer
 
