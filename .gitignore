@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Env & secrets
+.env
+.env.local
+
+# Generated keys — never commit these
+results/
+valid.txt
+failed.txt
+*.keys
+
+# Editor / OS
+.DS_Store
+*.log

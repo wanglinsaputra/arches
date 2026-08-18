@@ -1,0 +1,40 @@
+{
+  "name": "r4-coder-auto-key",
+  "version": "1.0.0",
+  "description": "Auto-generate R4 Coder API keys with temp mail, validate them, and optionally bulk-add to 9Router (OpenAI Compatible provider).",
+  "type": "module",
+  "bin": {
+    "r4-bot": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "r4-coder",
+    "api-key",
+    "automation",
+    "tempmail",
+    "9router"
+  ],
+  "author": "WangLinS",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "cli-progress": "^3.12.0",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/cli-progress": "^3.11.6",
+    "@types/node": "^22.7.4",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.2",
+    "vitest": "^2.1.2"
+  }
+}
