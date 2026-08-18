@@ -22,8 +22,16 @@ const NAME_PARTS = [
   'Kai', 'Luna', 'Max', 'Nico', 'Olive', 'Parker', 'Reed', 'Sky',
   'Toby', 'Vale', 'Wolf', 'Xander', 'Yuki', 'Zane', 'Rio', 'Ash',
   'Emery', 'Frankie', 'Kendall', 'Rowan', 'Sage', 'Ellis', 'Haven',
+  'Iris', 'Juno', 'Koda', 'Lennox', 'Mika', 'Nyx', 'Orion', 'Pax',
+  'Quill', 'Rune', 'Sora', 'Talon', 'Ursa', 'Vega', 'Wren', 'Yara',
+  'Zenith', 'Atlas', 'Briar', 'Cedar', 'Dune', 'Echo', 'Fern', 'Gale',
 ];
 
+/**
+ * Highly-unique random name: <First><4-digit><4-char suffix>.
+ * Roughly 64 * 9000 * 36^4 ≈ 9.7 billion combinations — effectively
+ * collision-proof even with public usage.
+ */
 export function randName(): string {
-  return `${randomChoice(NAME_PARTS)}${randomInt(100, 9999)}`;
+  return `${randomChoice(NAME_PARTS)}${randomInt(100, 9999)}${randomString(4)}`;
 }
