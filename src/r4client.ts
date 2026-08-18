@@ -32,15 +32,31 @@ export class R4Client {
     return res;
   }
 
+  private sleepMs = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
+  /**
+   * POST with retry + exponential backoff on transient errors (429 / 5xx),
+   * which R4 Coder returns when too many workers hit it at once.
+   */
+  private async postWithRetry(url: string, body: unknown, attempts = 4): Promise<Response> {
+    let lastRes: Response | null = null;
+    for (let attempt = 0; attempt < attempts; attempt++) {
+      lastRes = await this.request(url, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+      if (lastRes.status !== 429 && lastRes.status < 500) return lastRes;
+      await this.sleepMs(2000 * (attempt + 1) + Math.random() * 500);
+    }
+    return lastRes!;
+  }
+
   async signup(email: string, name: string): Promise<void> {
-    const res = await this.request(R4_SIGNUP, {
-      method: 'POST',
-      body: JSON.stringify({
-        email,
-        password: this.password,
-        name,
-        callbackURL: 'https://coder.r4.chat/verify-email',
-      }),
+    const res = await this.postWithRetry(R4_SIGNUP, {
+      email,
+      password: this.password,
+      name,
+      callbackURL: 'https://coder.r4.chat/verify-email',
     });
     if (!res.ok) throw new Error(`signup failed (${res.status})`);
     const data = (await res.json()) as { error?: string };
@@ -55,20 +71,14 @@ export class R4Client {
   }
 
   async login(email: string): Promise<void> {
-    const res = await this.request(R4_LOGIN, {
-      method: 'POST',
-      body: JSON.stringify({ email, password: this.password }),
-    });
+    const res = await this.postWithRetry(R4_LOGIN, { email, password: this.password });
     if (!res.ok) throw new Error(`login failed (${res.status})`);
     const data = (await res.json()) as { token?: string };
     if (!data.token) throw new Error('login: no session token returned');
   }
 
   async createKey(name: string): Promise<string> {
-    const res = await this.request(R4_KEY, {
-      method: 'POST',
-      body: JSON.stringify({ json: { name } }),
-    });
+    const res = await this.postWithRetry(R4_KEY, { json: { name } });
     if (!res.ok) throw new Error(`key creation failed (${res.status})`);
     const data = (await res.json()) as { json?: { key?: string } };
     const key = data.json?.key;
@@ -77,7 +87,7 @@ export class R4Client {
   }
 
   async testKey(key: string): Promise<boolean> {
-    const sleepMs = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    const sleepMs = this.sleepMs;
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         const res = await fetch(R4_CHAT, {

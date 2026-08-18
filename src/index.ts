@@ -206,7 +206,9 @@ async function main(): Promise<void> {
     }
   } else {
     let cursor = 0;
-    const worker = async (): Promise<void> => {
+    const worker = async (wid: number): Promise<void> => {
+      // stagger worker start to reduce the initial request burst
+      await sleep(wid * 3000);
       while (true) {
         const i = cursor++;
         if (i >= count) return;
@@ -214,7 +216,7 @@ async function main(): Promise<void> {
         await sleep(randomInt(delayMin, delayMax) * 1000);
       }
     };
-    await Promise.all(Array.from({ length: workers }, worker));
+    await Promise.all(Array.from({ length: workers }, (_, wid) => worker(wid)));
   }
 
   bar.stop();
