@@ -1,14 +1,14 @@
-# R4 Coder — Auto API Key Generator
+# Auto API Key Generator
 
-> by WangLinS
+> R4 Coder — by WangLinS
 
 Automated tool to create R4 Coder accounts, generate API keys, validate them, and optionally bulk-add valid keys to a **9Router** "OpenAI Compatible" provider.
 
 <div align="center">
 
-![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue)
-![Node](https://img.shields.io/badge/Node-%3E%3D20-green)
-![License](https://img.shields.io/badge/License-MIT-yellow)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue)](https://www.typescriptlang.org/)
+[![Node](https://img.shields.io/badge/Node-%3E%3D20-green)](https://nodejs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/wanglinsaputra/auto-api-key-generator/blob/main/LICENSE)
 
 </div>
 
@@ -183,4 +183,4 @@ tests/
 
 ## License
 
-MIT
+[MIT](https://github.com/wanglinsaputra/auto-api-key-generator/blob/main/LICENSE) — © 2026 WangLinS

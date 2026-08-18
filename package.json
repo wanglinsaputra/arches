@@ -1,5 +1,5 @@
 {
-  "name": "r4-coder-auto-key",
+  "name": "auto-api-key-generator",
   "version": "1.0.0",
   "description": "Auto-generate R4 Coder API keys with temp mail, validate them, and optionally bulk-add to 9Router (OpenAI Compatible provider).",
   "type": "module",
