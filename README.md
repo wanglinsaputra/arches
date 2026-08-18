@@ -22,7 +22,7 @@ Automated tool to create R4 Coder accounts, generate API keys, validate them, an
 
 Every account goes through the same pipeline, fully automated over HTTP:
 
-1. **Temp mail** — a disposable inbox is created (Mail.tm).
+1. **Temp mail** — a disposable inbox is created (multi-provider: mail.tm, zoromail, ...).
 2. **Signup** — an R4 Coder account is registered with that email.
 3. **Verify** — the verification link is extracted from the inbox and clicked.
 4. **Key creation** — the account is logged in and an API key is issued.
@@ -34,7 +34,7 @@ flowchart TD
     A[Start CLI] --> B{9Router enabled?}
     B -- no --> C[Generate keys]
     B -- yes --> D[Auth to 9Router]
-    C --> E[Temp mail Mail.tm]
+    C --> E[Temp mail: mail.tm / zoromail / ...]
     E --> F[Signup R4 Coder]
     F --> G[Verify email]
     G --> H[Login + create API key]
@@ -54,7 +54,7 @@ flowchart TD
 ## Features
 
 - **Direct API automation** — no browser or GUI; all steps use plain HTTP calls (runs headless on any server)
-- **Auto signup** with temp mail (Mail.tm)
+- **Auto signup** with temp mail (multi-provider, fallback on failure)
 - **Auto email verification** (extracts verification link from the inbox)
 - **API key creation** via the R4 Coder dashboard RPC
 - **Key validation** against a live model (`deepseek-v4-flash-free` default)
@@ -122,7 +122,7 @@ Press Enter to accept the default. When stdin is not a terminal (e.g. piped), th
 |------|-------------|---------|
 | `-c, --count <n>` | Number of keys to create | `1` |
 | `-w, --workers <n>` | Concurrent workers | `1` |
-| `-p, --provider <name>` | Temp mail provider (`mail.tm`) | `mail.tm` |
+| `-p, --provider <names>` | Temp mail providers, comma-separated (tried in order, fallback on failure) | `mail.tm,zoromail` |
 | `-m, --model <id>` | Model used to validate keys | `deepseek-v4-flash-free` |
 | `--password <pw>` | Account password | `WangLinS2026!` |
 | `--output-dir <dir>` | Directory for result files (created if missing) | `results` |
@@ -232,7 +232,7 @@ src/
 ├── config.ts     # .env / config loading
 ├── banner.ts     # WangLinS banner + colors
 ├── prompt.ts     # interactive y/N prompt
-├── tempmail.ts   # temp mail providers (Mail.tm)
+├── tempmail.ts   # multi-provider temp mail manager
 ├── r4client.ts   # R4 Coder API client
 ├── router9.ts    # 9Router client (nodes + connections)
 ├── sync.ts       # 9Router sync orchestration

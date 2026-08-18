@@ -35,3 +35,14 @@ export function getMissingRouter9Vars(cfg: Router9Config): string[] {
   if (!cfg.password) missing.push('ROUTER9_PASS');
   return missing;
 }
+
+/**
+ * Resolve the temp mail provider list: CLI value wins, falls back to
+ * TEMPMAIL_PROVIDER env (comma/pipe/semicolon separated), then the default.
+ */
+export function resolveTempMailProviders(cliValue: string | undefined, fallback: string): string {
+  if (cliValue && cliValue.trim()) return cliValue;
+  const env = process.env.TEMPMAIL_PROVIDER;
+  if (env && env.trim()) return env;
+  return fallback;
+}

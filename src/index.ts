@@ -4,9 +4,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import cliProgress from 'cli-progress';
 import { BANNER, SEPARATOR, c } from './banner.js';
-import { loadRouter9Config, isRouter9Configured } from './config.js';
+import { loadRouter9Config, isRouter9Configured, resolveTempMailProviders } from './config.js';
 import { confirm, isInteractive, askNumber, askDelay } from './prompt.js';
-import { MailTmProvider, TempMailProvider } from './tempmail.js';
+import { TempMailManager, DEFAULT_TEMP_MAIL_PROVIDERS } from './tempmail.js';
 import { R4Client } from './r4client.js';
 import { syncKeysToRouter9, SyncEntry, SyncSummary } from './sync.js';
 import { randName, randomInt, sleep } from './utils.js';
@@ -31,39 +31,30 @@ interface Result {
   valid: boolean;
 }
 
-function providerFactory(name: string, password: string): TempMailProvider {
-  switch (name) {
-    case 'mail.tm':
-      return new MailTmProvider(password);
-    default:
-      throw new Error(`unknown temp mail provider: ${name}`);
-  }
-}
-
-async function generateOne(provider: TempMailProvider, password: string, model: string): Promise<Result | null> {
+async function generateOne(mgr: TempMailManager, password: string, model: string): Promise<Result | null> {
   const name = randName();
-  let email: string;
+  let gen;
   try {
-    email = await provider.generate();
-  } catch (e) {
+    gen = await mgr.generate();
+  } catch {
     return null;
   }
 
   const client = new R4Client(password, model);
 
   try {
-    await client.signup(email, name);
+    await client.signup(gen.addr, name);
   } catch {
     return null;
   }
 
-  const verifyUrl = await provider.getVerifyLink(email, 90_000, 4_000);
+  const verifyUrl = await mgr.getVerifyLink(gen.addr, 90_000, 4_000);
   if (!verifyUrl) return null;
 
   try {
     await client.verify(verifyUrl);
     await sleep(1000);
-    await client.login(email);
+    await client.login(gen.addr);
   } catch {
     return null;
   }
@@ -92,7 +83,7 @@ async function main(): Promise<void> {
     .version('1.0.0')
     .option('-c, --count <n>', 'number of keys to create', '1')
     .option('-w, --workers <n>', 'concurrent workers', '1')
-    .option('-p, --provider <name>', 'temp mail provider', 'mail.tm')
+    .option('-p, --provider <names>', 'temp mail providers (comma-separated)', DEFAULT_TEMP_MAIL_PROVIDERS)
     .option('-m, --model <id>', 'model used to validate keys', 'deepseek-v4-flash-free')
     .option('--password <pw>', 'account password', 'WangLinS2026!')
     .option('--output-dir <dir>', 'directory for result files', 'results')
@@ -139,12 +130,17 @@ async function main(): Promise<void> {
   workers = Math.max(1, workers);
   const [delayMin, delayMax] = delay.split('-').map((n) => Math.max(0, Number(n) || 0));
 
+  const tempMailProviders = resolveTempMailProviders(
+    program.getOptionValueSource('provider') === 'default' ? undefined : opts.provider,
+    DEFAULT_TEMP_MAIL_PROVIDERS,
+  );
+
   // resolve result files inside output-dir; create the folder when missing
   const validFile = path.join(opts.outputDir, opts.valid);
   const failedFile = path.join(opts.outputDir, opts.failed);
   await fs.mkdir(opts.outputDir, { recursive: true });
 
-  console.log(`  ${c.white('Provider :')} ${c.cyan(opts.provider)}`);
+  console.log(`  ${c.white('Provider :')} ${c.cyan(tempMailProviders)}`);
   console.log(`  ${c.white('Model    :')} ${c.cyan(opts.model)}`);
   console.log(`  ${c.white('Count    :')} ${c.cyan(String(count))}`);
   console.log(`  ${c.white('Workers  :')} ${c.cyan(String(workers))}`);
@@ -173,7 +169,7 @@ async function main(): Promise<void> {
     console.log(`  ${c.yellow(`ℹ ${existingKeys.size} existing keys, skipping duplicates`)}\n`);
   }
 
-  const provider = providerFactory(opts.provider, opts.password);
+  const mgr = new TempMailManager(tempMailProviders);
   const bar = new cliProgress.SingleBar(
     { format: `${c.cyan('  Creating')} [{bar}] {value}/{total} [{duration_formatted}]` },
     cliProgress.Presets.shades_classic,
@@ -186,7 +182,7 @@ async function main(): Promise<void> {
   const allResults: Result[] = [];
 
   const runOne = async (): Promise<void> => {
-    const result = await generateOne(provider, opts.password, opts.model);
+    const result = await generateOne(mgr, opts.password, opts.model);
     if (!result) {
       skippedCount++;
       bar.increment(1);
