@@ -4,6 +4,8 @@
 
 Automated tool to create R4 Coder accounts, generate API keys, validate them, and optionally bulk-add valid keys to a **9Router** "OpenAI Compatible" provider.
 
+> ⚡ **Direct-to-API automation** — every step (temp mail, signup, verification, key creation, 9Router sync) runs over plain HTTP requests. **No browser required** — fully headless, works on any server.
+
 > ⚠️ **Educational & research use only.** Use at your own risk — you are solely responsible for compliance with each service's ToS and all applicable laws. See [Disclaimer](#disclaimer).
 
 <div align="center">
@@ -18,10 +20,11 @@ Automated tool to create R4 Coder accounts, generate API keys, validate them, an
 
 ## Features
 
+- **Direct API automation** — no browser or GUI; all steps use plain HTTP calls (runs headless on any server)
 - **Auto signup** with temp mail (Mail.tm)
 - **Auto email verification** (extracts verification link from the inbox)
 - **API key creation** via the R4 Coder dashboard RPC
-- **Key validation** against a live model (`deepseek-v4-flash-free-free` default)
+- **Key validation** against a live model (`deepseek-v4-flash-free` default)
 - **Multi-worker** concurrent generation
 - **Progress bar** with real-time counters
 - **Resume support** — existing keys in `valid.txt` / `failed.txt` are skipped
@@ -72,7 +75,7 @@ Press Enter to accept the default. When stdin is not a terminal (e.g. piped), th
 | `-c, --count <n>` | Number of keys to create | `1` |
 | `-w, --workers <n>` | Concurrent workers | `1` |
 | `-p, --provider <name>` | Temp mail provider (`mail.tm`) | `mail.tm` |
-| `-m, --model <id>` | Model used to validate keys | `deepseek-v4-flash-free-free` |
+| `-m, --model <id>` | Model used to validate keys | `deepseek-v4-flash-free` |
 | `--password <pw>` | Account password | `WangLinS2026!` |
 | `--output-dir <dir>` | Directory for result files (created if missing) | `results` |
 | `--valid <file>` | Valid keys file (inside output-dir) | `valid.txt` |
