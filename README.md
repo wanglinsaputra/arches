@@ -18,6 +18,39 @@ Automated tool to create R4 Coder accounts, generate API keys, validate them, an
 
 </div>
 
+## How It Works
+
+Every account goes through the same pipeline, fully automated over HTTP:
+
+1. **Temp mail** — a disposable inbox is created (Mail.tm).
+2. **Signup** — an R4 Coder account is registered with that email.
+3. **Verify** — the verification link is extracted from the inbox and clicked.
+4. **Key creation** — the account is logged in and an API key is issued.
+5. **Validate** — the key is tested against a live model; valid keys go to `valid.txt`, invalid to `failed.txt`.
+6. **9Router sync** *(optional)* — valid keys are bulk-added to the `OpenAI Compatible` node.
+
+```mermaid
+flowchart TD
+    A[Start CLI] --> B{9Router enabled?}
+    B -- no --> C[Generate keys]
+    B -- yes --> D[Auth to 9Router]
+    C --> E[Temp mail Mail.tm]
+    E --> F[Signup R4 Coder]
+    F --> G[Verify email]
+    G --> H[Login + create API key]
+    H --> I{Key valid?}
+    I -- yes --> J[valid.txt]
+    I -- no --> K[failed.txt]
+    J --> L{9Router on?}
+    L -- yes --> M[Find/create OpenAI Compatible node]
+    M --> N[Add model + Test]
+    N --> O[Bulk-add keys]
+    L -- no --> P[Done]
+    O --> P
+```
+
+> The diagram renders natively on GitHub. On viewers that don't render Mermaid, the numbered steps above still describe the flow.
+
 ## Features
 
 - **Direct API automation** — no browser or GUI; all steps use plain HTTP calls (runs headless on any server)
@@ -28,17 +61,32 @@ Automated tool to create R4 Coder accounts, generate API keys, validate them, an
 - **Multi-worker** concurrent generation
 - **Progress bar** with real-time counters
 - **Resume support** — existing keys in `valid.txt` / `failed.txt` are skipped
-- **9Router integration** — optional bulk-add of valid keys to the `OpenAI Compatible` node (creates the node if missing, never duplicates)
+- **9RouteThe diagram renders natively on GitHub. On other viewers that don't render Mermaid, the text steps above still describe the flow.
 
 ## Requirements
 
-- Node.js **>= 20** (native `fetch`, no network lib needed)
-- npm
+- **Node.js >= 20** (uses native `fetch` — no network library needed)
+- **npm** (comes with Node)
+
+Verify your environment:
+
+```bash
+node --version   # must be >= 20
+npm --version
+```
 
 ## Install
 
 ```bash
+git clone https://github.com/wanglinsaputra/arches.git
+cd arches
 npm install
+```
+
+Optional — set up `.env` for the 9Router integration:
+
+```bash
+cp .env.example .env   # then edit ROUTER9_URL and ROUTER9_PASS
 ```
 
 ## Quick Start
@@ -132,20 +180,22 @@ When enabled, after key generation the tool:
    - and **tests** that model (`POST /api/models/test`) — always runs.
 4. **Bulk-adds** each valid key as a connection on that node, skipping duplicates and continuing on individual failures.
 
-```text
-9router integration: ENABLED
-✓ Existing OpenAI Compatible node found
-Using existing node (coder.r4.chat)
-✓ Synced: 8
-⚠ 9router failed: 2
-```
-
+**Fresh setup** (node created):
 ```text
 9router integration: ENABLED
 ✓ OpenAI Compatible node created
 ✓ Model added: deepseek-v4-flash-free
 ✓ Synced: 8
 ✓ Model test: PASSED
+```
+
+**Existing node** (reused):
+```text
+9router integration: ENABLED
+✓ Existing OpenAI Compatible node found
+Using existing node (coder.r4.chat)
+✓ Synced: 8
+⚠ 9router failed: 2
 ```
 
 9Router sync failures never fail the main key-generation flow.
@@ -157,13 +207,13 @@ Results are written to the output directory (default `results/`, auto-created). 
 **results/valid.txt** — working API keys:
 
 ```
-Alex1234|coder_abc123...
+Morgan4021iz8n|coder_abc123...
 ```
 
 **results/failed.txt** — non-working keys:
 
 ```
-Sam5678|coder_xyz789...
+Vega1042er4k|coder_xyz789...
 ```
 
 ## Development
@@ -189,6 +239,17 @@ src/
 └── utils.ts      # helpers
 tests/
 └── router9.test.ts
+
+## Architecture
+
+Three focused modules power the whole pipeline; each talks to one external system over plain HTTP:
+
+- **`tempmail.ts`** — disposable-inbox provider (Mail.tm): create address, poll inbox, extract the verification link.
+- **`r4client.ts`** — R4 Coder client: signup, verify, login, create API key, validate against a live model.
+- **`router9.ts` / `sync.ts`** — 9Router client + orchestration: authenticate, manage the `OpenAI Compatible` node, add models, bulk-add connections.
+
+`index.ts` wires them together and drives the CLI, progress bar, and result files.
+
 ```
 
 ## Security
